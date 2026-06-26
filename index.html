@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KI-Video Briefing-Generator · ERGO</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { colors: {
+      ergo: { red: '#BF1528', dark: '#8E0F1E', ice: '#CCEBED', petrol: '#0F94A7', grey: '#545241' }
+    }, fontFamily: { sans: ['Arial', 'Helvetica', 'sans-serif'] } } }
+  }
+</script>
+<style>
+  body { background: #f4f4f2; }
+  .card { background:#fff; border:1px solid #e6e6e3; border-radius:14px; }
+  textarea, input, select { outline:none; }
+  textarea:focus, input:focus, select:focus { border-color:#BF1528; box-shadow:0 0 0 3px rgba(191,21,40,.12); }
+  .pill { transition:all .15s ease; }
+  .pill.sel { border-color:#BF1528; background:#fdecee; }
+  .spin { animation:spin 1s linear infinite; } @keyframes spin { to { transform:rotate(360deg); } }
+  pre { white-space:pre-wrap; word-break:break-word; }
+</style>
+</head>
+<body class="font-sans text-ergo-grey">
+
+<header class="bg-white border-b border-gray-200">
+  <div class="max-w-5xl mx-auto px-5 py-4 flex items-center gap-3">
+    <div class="text-ergo-red font-bold text-3xl tracking-tight">ERGO</div>
+    <div class="h-7 w-px bg-gray-300"></div>
+    <div>
+      <h1 class="text-lg font-bold text-gray-800 leading-tight">KI-Video Briefing-Generator</h1>
+      <p class="text-xs text-gray-500 leading-tight">Vom Briefing zur Produktionsvorlage · Flow → Veo 3 → Chirp3-HD „Leda" → Montage</p>
+    </div>
+  </div>
+</header>
+
+<!-- Produktionsfortschritt -->
+<div class="bg-white border-b border-gray-200">
+  <div class="max-w-5xl mx-auto px-5 py-4">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-bold text-gray-800 text-sm">Produktionsfortschritt</h2>
+      <div class="flex items-center gap-3">
+        <span id="progPct" class="text-sm font-bold text-ergo-red">0 %</span>
+        <button id="progReset" class="text-xs text-gray-400 hover:text-ergo-red underline">zurücksetzen</button>
+      </div>
+    </div>
+    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
+      <div id="progBar" class="h-full bg-ergo-red transition-all duration-300" style="width:0%"></div>
+    </div>
+    <div id="stages" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2"></div>
+  </div>
+</div>
+
+<main class="max-w-5xl mx-auto px-5 py-6 grid lg:grid-cols-2 gap-6">
+
+  <!-- ===== LINKE SPALTE: EINGABE ===== -->
+  <section class="space-y-5">
+
+    <!-- Vorlagen-Bibliothek -->
+    <div class="card p-3 flex flex-wrap items-center gap-2">
+      <span class="text-sm font-semibold text-gray-700">📁 Vorlagen:</span>
+      <select id="tplSelect" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white flex-1 min-w-[140px]"><option value="">— laden —</option></select>
+      <button id="tplLoad" class="text-xs bg-gray-700 text-white px-3 py-1.5 rounded-lg hover:bg-gray-900">Laden</button>
+      <button id="tplSave" class="text-xs bg-ergo-petrol text-white px-3 py-1.5 rounded-lg hover:bg-teal-700">Aktuelles speichern</button>
+      <button id="tplDel" class="text-xs text-gray-400 hover:text-ergo-red underline">löschen</button>
+    </div>
+
+    <!-- 1. Grunddaten -->
+    <div class="card p-5">
+      <h2 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="bg-ergo-red text-white text-xs rounded-full w-5 h-5 grid place-items-center">1</span> Grunddaten</h2>
+
+      <label class="block text-sm font-semibold mb-1">Versicherung / Produkt, das beworben wird</label>
+      <select id="product" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-1 bg-white">
+        <option>ERGO Kieferorthopädie Sofortschutz</option>
+        <option>ERGO Zahnzusatzversicherung</option>
+        <option>ERGO Gewerbe-Rechtsschutz</option>
+        <option>ERGO Privat-Rechtsschutz</option>
+        <option>ERGO Risikolebensversicherung</option>
+        <option>ERGO Haftpflichtversicherung</option>
+        <option value="__custom">Anderes Produkt (frei eingeben) …</option>
+      </select>
+      <input id="productCustom" type="text" placeholder="Produktname frei eingeben" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 hidden">
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Länge</label>
+          <select id="length" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+            <option value="15">15 Sek. (Cutdown)</option>
+            <option value="20">20 Sek.</option>
+            <option value="30" selected>30 Sek. (Hero)</option>
+            <option value="40">40 Sek. (lange Story)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Tonalität</label>
+          <select id="tone" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+            <option>Warm & nahbar</option>
+            <option>Emotional & berührend</option>
+            <option>Tragikomisch & augenzwinkernd</option>
+            <option>Seriös & vertrauensvoll</option>
+            <option>Modern & energetisch</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Format</label>
+          <select id="format" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+            <option value="16:9">16:9 — YouTube</option>
+            <option value="9:16">9:16 — Shorts / Reels</option>
+            <option value="1:1">1:1 — Feed-Post</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Sprachfassungen</label>
+          <select id="langs" multiple size="3" class="w-full border border-gray-300 rounded-lg px-2 py-1 bg-white text-sm">
+            <option value="Deutsch" selected>Deutsch</option>
+            <option value="Englisch">Englisch</option>
+            <option value="Türkisch">Türkisch</option>
+            <option value="Französisch">Französisch</option>
+            <option value="Polnisch">Polnisch</option>
+            <option value="Italienisch">Italienisch</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="block text-sm font-semibold mb-1 mt-3">Zielgruppe (optional)</label>
+      <input id="audience" type="text" placeholder="z. B. Selbstständige, Eltern, Familien …" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+
+      <div id="costEst" class="mt-3 text-xs bg-gray-50 border border-gray-200 rounded-lg p-2 text-gray-600"></div>
+    </div>
+
+    <!-- 2. Storyboard -->
+    <div class="card p-5">
+      <h2 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="bg-ergo-red text-white text-xs rounded-full w-5 h-5 grid place-items-center">2</span> Storyboard / Idee</h2>
+      <textarea id="story" rows="7" placeholder="Beschreibe die Story in Stichworten oder Sätzen. Beispiel: Eine Tischlerin liebt ihren Betrieb. Plötzlich taucht 'Herr Paragraf' auf – die personifizierte Rechtsstreitigkeit – und bringt Ärger. Dank ERGO Gewerbe-Rechtsschutz setzt sie ihn vor die Tür." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+      <div class="flex items-center gap-2 mt-2">
+        <button id="btnImprove" class="bg-ergo-petrol text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-2">
+          <span id="improveSpin" class="hidden inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full spin"></span>
+          ✨ Mit Gemini verbessern
+        </button>
+        <button id="btnHooks" class="bg-white border border-ergo-petrol text-ergo-petrol text-sm font-semibold px-3 py-2 rounded-lg hover:bg-teal-50 flex items-center gap-2">
+          <span id="hooksSpin" class="hidden inline-block w-4 h-4 border-2 border-ergo-petrol border-t-transparent rounded-full spin"></span>
+          A/B-Hooks
+        </button>
+        <span id="improveMsg" class="text-xs text-gray-500"></span>
+      </div>
+      <div id="hooksOut" class="hidden mt-3 grid sm:grid-cols-2 gap-2"></div>
+    </div>
+
+    <!-- 3. Ending -->
+    <div class="card p-5">
+      <h2 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="bg-ergo-red text-white text-xs rounded-full w-5 h-5 grid place-items-center">3</span> Werbliches Ending</h2>
+      <p class="text-xs text-gray-500 mb-3">Wähle, wie der Spot in den Markenteil übergeht.</p>
+      <div id="endings" class="grid sm:grid-cols-2 gap-3"></div>
+    </div>
+
+    <!-- 4. Stimme & Musik -->
+    <div class="card p-5">
+      <h2 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="bg-ergo-red text-white text-xs rounded-full w-5 h-5 grid place-items-center">4</span> Stimme & Musik</h2>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Voiceover-Stimme (Chirp3-HD)</label>
+          <select id="voice" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm"></select>
+          <p id="voiceDesc" class="text-xs text-gray-500 mt-1"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Musik-Stil</label>
+          <select id="music" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-sm"></select>
+          <p id="musicDesc" class="text-xs text-gray-500 mt-1"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gemini Key -->
+    <div class="card p-5">
+      <details>
+        <summary class="font-semibold text-gray-700 cursor-pointer text-sm">⚙️ Gemini-API-Key (für KI-Funktionen)</summary>
+        <div class="mt-3 space-y-2">
+          <input id="apiKey" type="password" placeholder="AIza… (Google Generative Language API)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-gray-600">Modell</label>
+            <select id="model" class="border border-gray-300 rounded-lg px-2 py-1 text-xs bg-white">
+              <option>gemini-2.0-flash</option>
+              <option>gemini-2.5-flash</option>
+              <option>gemini-1.5-flash</option>
+            </select>
+            <label class="text-xs text-gray-600 ml-2"><input type="checkbox" id="saveKey" checked> lokal merken</label>
+          </div>
+          <p class="text-xs text-gray-400">Der Key bleibt nur in deinem Browser (localStorage). Aktiviere in der Google Cloud Console die „Generative Language API" und erstelle dort einen API-Key.</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Freigabe -->
+    <div class="card p-4">
+      <label class="flex items-start gap-2 text-sm cursor-pointer">
+        <input type="checkbox" id="freigabe" class="mt-0.5">
+        <span><b>Rechtliche/Marken-Freigabe erteilt</b> — Produkt-, Tarif- & Rechtsaussagen von ERGO geprüft. <span class="text-gray-500">Pflicht, bevor „Freigabe & Export" im Fortschritt abgehakt werden kann.</span></span>
+      </label>
+    </div>
+
+    <button id="btnGenerate" class="w-full bg-ergo-red text-white font-bold py-3 rounded-xl hover:bg-ergo-dark text-lg shadow">Briefing erzeugen →</button>
+  </section>
+
+  <!-- ===== RECHTE SPALTE: AUSGABE ===== -->
+  <section class="space-y-4">
+    <div class="card p-5 sticky top-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-bold text-gray-800">Produktionsvorlage</h2>
+        <div class="flex gap-2">
+          <button id="btnElaborate" class="hidden bg-ergo-petrol text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-teal-700 items-center gap-1">
+            <span id="elabSpin" class="hidden inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full spin"></span>
+            ✨ Szenen & Veo-Prompts ausarbeiten
+          </button>
+        </div>
+      </div>
+      <div id="emptyState" class="text-center text-gray-400 py-16 text-sm">
+        Fülle links das Briefing aus und klicke <span class="font-semibold text-ergo-red">„Briefing erzeugen"</span>.<br>Die fertige Produktionsvorlage erscheint hier.
+      </div>
+      <div id="output" class="hidden">
+        <div class="flex gap-2 mb-3">
+          <button id="btnCopy" class="bg-gray-800 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-black">📋 Kopieren</button>
+          <button id="btnMd" class="bg-gray-700 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-900">⬇︎ Markdown</button>
+          <button id="btnJson" class="bg-gray-700 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-900">⬇︎ JSON</button>
+        </div>
+        <pre id="briefView" class="text-xs bg-gray-50 border border-gray-200 rounded-lg p-3 max-h-[70vh] overflow-auto leading-relaxed"></pre>
+      </div>
+    </div>
+
+    <!-- Feedback & Versionen -->
+    <div class="card p-5">
+      <h2 class="font-bold text-gray-800 mb-2 flex items-center gap-2">🔁 Feedback & Versionen <span id="verBadge" class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">v1</span></h2>
+      <p class="text-xs text-gray-500 mb-2">Was soll besser werden? Gemini überarbeitet Story & Brief und legt eine neue Version an.</p>
+      <textarea id="feedback" rows="3" placeholder="z. B. emotionaler machen, Hauptfigur jünger, klareres Nutzenversprechen, kürzeres Ending …" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+      <div class="flex items-center gap-2 mt-2">
+        <button id="btnRevise" class="bg-ergo-petrol text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-2">
+          <span id="reviseSpin" class="hidden inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full spin"></span>
+          ✨ Neue Version erzeugen
+        </button>
+        <span id="reviseMsg" class="text-xs text-gray-500"></span>
+      </div>
+      <div id="verList" class="mt-3 space-y-1"></div>
+    </div>
+
+    <!-- Thumbnail-Generator -->
+    <div class="card p-5">
+      <h2 class="font-bold text-gray-800 mb-2 flex items-center gap-2">🖼️ Thumbnail-Generator</h2>
+      <p class="text-xs text-gray-500 mb-2">Branded Endcard als YouTube-Thumbnail (nutzt Produkt & Claim).</p>
+      <div class="flex items-center gap-2 mb-2">
+        <button id="btnThumb" class="bg-gray-800 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-black">Thumbnail erzeugen</button>
+        <button id="btnThumbDl" class="hidden bg-gray-700 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-900">⬇︎ PNG</button>
+        <select id="thumbStyle" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white">
+          <option value="ice">Eisblau (hell)</option>
+          <option value="red">ERGO-Rot</option>
+        </select>
+      </div>
+      <canvas id="thumbCanvas" width="1280" height="720" class="hidden w-full rounded-lg border border-gray-200"></canvas>
+    </div>
+
+    <!-- YouTube Upload -->
+    <div class="card p-5">
+      <h2 class="font-bold text-gray-800 mb-2 flex items-center gap-2">▶️ Auf YouTube hochladen</h2>
+      <details class="mb-2">
+        <summary class="text-xs text-gray-600 cursor-pointer font-semibold">⚙️ Einrichtung (OAuth-Client-ID) — einmalig</summary>
+        <div class="mt-2 space-y-2">
+          <input id="ytClientId" type="text" placeholder="OAuth-Client-ID (…apps.googleusercontent.com)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs">
+          <p class="text-[11px] text-gray-400 leading-snug">In der Google Cloud Console: „YouTube Data API v3" aktivieren → OAuth-Client (Web) anlegen → als autorisierten JavaScript-Ursprung deine GitHub-Pages-URL eintragen. Dich selbst als Testnutzer hinzufügen. Die ID wird lokal gespeichert.</p>
+        </div>
+      </details>
+      <div class="grid grid-cols-1 gap-2">
+        <input id="ytTitle" type="text" placeholder="Video-Titel" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        <textarea id="ytDesc" rows="2" placeholder="Beschreibung" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+        <div class="grid grid-cols-2 gap-2">
+          <input id="ytTags" type="text" placeholder="Tags (Komma-getrennt)" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          <select id="ytPrivacy" class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="private">Privat</option>
+            <option value="unlisted" selected>Nicht gelistet</option>
+            <option value="public">Öffentlich</option>
+          </select>
+        </div>
+        <label class="text-sm font-semibold">Geplante Veröffentlichung (optional)</label>
+        <input id="ytPublishAt" type="datetime-local" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        <p class="text-[11px] text-gray-400 -mt-1">Wenn gesetzt: Upload als „privat" mit automatischer Veröffentlichung zum Termin.</p>
+        <label class="text-sm font-semibold">Videodatei (.mp4)</label>
+        <input id="ytFile" type="file" accept="video/*" class="text-sm">
+        <div class="flex items-center gap-2">
+          <button id="btnYtUpload" class="bg-ergo-red text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-ergo-dark flex items-center gap-2">⬆︎ Hochladen</button>
+          <span id="ytMsg" class="text-xs text-gray-500"></span>
+        </div>
+        <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden hidden" id="ytBarWrap"><div id="ytBar" class="h-full bg-ergo-red" style="width:0%"></div></div>
+        <a id="ytLink" class="hidden text-sm text-ergo-petrol underline" target="_blank">▶ Video auf YouTube öffnen</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="max-w-5xl mx-auto px-5 py-6 text-xs text-gray-400">
+  ERGO-CI: Rot #BF1528 · Claim „Einfach, weil's wichtig ist." · KI-Kennzeichnung „Mit KI erstellt, von Menschen gestaltet." · Produkt-/Rechtstexte vor Veröffentlichung von ERGO freigeben lassen.
+</footer>
+
+<script>
+// ---------- Daten ----------
+const VOICES = [
+  ['de-DE-Chirp3-HD-Leda','Leda — warm, weiblich (Standard)'],
+  ['de-DE-Chirp3-HD-Callirrhoe','Callirrhoe — warm & ruhig, weiblich'],
+  ['de-DE-Chirp3-HD-Aoede','Aoede — hell & freundlich, weiblich'],
+  ['de-DE-Chirp3-HD-Kore','Kore — klar & vertrauensvoll, weiblich'],
+  ['de-DE-Chirp3-HD-Vindemiatrix','Vindemiatrix — sanft & seriös, weiblich'],
+  ['de-DE-Chirp3-HD-Charon','Charon — ruhig & souverän, männlich'],
+  ['de-DE-Chirp3-HD-Puck','Puck — lebendig & nahbar, männlich']
+];
+const MUSIC = [
+  ['warm_aufbauend','Warm & aufbauend — sanfter Start, hoffnungsvolle Auflösung'],
+  ['modern_cool','Modern & cool — dezenter Beat, urban'],
+  ['emotional_piano','Emotional — Piano & Streicher, berührend'],
+  ['energetisch_upbeat','Energetisch — Upbeat-Pop, schwungvoll'],
+  ['neutral_dezent','Neutral & dezent — ruhiger Pad-Teppich']
+];
+const ENDINGS = [
+  ['claim_ruhig','Marken-Claim (ruhig)','Pastell-Eisblau-Endcard, großes rotes ERGO + Claim „Einfach, weil\'s wichtig ist." Ruhiger, vertrauensvoller Abschluss.'],
+  ['performance_cta','Performance / CTA','Angebots-Karte mit Produktname + Nutzen, roter CTA-Button „Jetzt absichern!", dann Endcard. Auf Conversion ausgelegt.'],
+  ['emotional_testimonial','Emotionales Testimonial','Warmes Schlussbild der Hauptfigur, ruhiger Markensatz + Claim. Stärkt Sympathie & Markenbindung.'],
+  ['produkt_fokus','Produkt-Fokus / Nutzen','Produktname groß, 1–2 Nutzen-Stichpunkte, CTA-URL, dann Claim. Klare Produktbotschaft.']
+];
+const SCENES_BY_LEN = { '15':3, '20':4, '30':5, '40':7 };
+const BRAND = {
+  rot:'#BF1528', claim:"Einfach, weil's wichtig ist.",
+  logo:'ERGO – A Munich Re company', ki_hinweis:"Mit KI erstellt, von Menschen gestaltet.",
+  font:'Arial'
+};
+
+// ---------- Setup UI ----------
+const $ = id => document.getElementById(id);
+VOICES.forEach(([v,d])=>{ const o=document.createElement('option'); o.value=v; o.textContent=d; $('voice').appendChild(o); });
+MUSIC.forEach(([v,d])=>{ const o=document.createElement('option'); o.value=v; o.textContent=d.split(' — ')[0]; $('music').appendChild(o); });
+let selEnding = ENDINGS[0][0];
+ENDINGS.forEach(([id,t,d],i)=>{
+  const el=document.createElement('button');
+  el.className='pill text-left border border-gray-300 rounded-lg p-3 hover:border-ergo-red '+(i===0?'sel':'');
+  el.innerHTML=`<div class="font-semibold text-sm text-gray-800">${t}</div><div class="text-xs text-gray-500 mt-1">${d}</div>`;
+  el.onclick=()=>{ selEnding=id; document.querySelectorAll('#endings .pill').forEach(p=>p.classList.remove('sel')); el.classList.add('sel'); };
+  $('endings').appendChild(el);
+});
+const voiceDesc=()=>$('voiceDesc').textContent = VOICES.find(v=>v[0]===$('voice').value)[1];
+const musicDesc=()=>$('musicDesc').textContent = MUSIC.find(m=>m[0]===$('music').value)[1].split(' — ')[1]||'';
+$('voice').onchange=voiceDesc; $('music').onchange=musicDesc; voiceDesc(); musicDesc();
+$('product').onchange=e=>$('productCustom').classList.toggle('hidden', e.target.value!=='__custom');
+
+// localStorage Key
+if(localStorage.getItem('gemKey')){ $('apiKey').value=localStorage.getItem('gemKey'); }
+if(localStorage.getItem('gemModel')){ $('model').value=localStorage.getItem('gemModel'); }
+$('apiKey').onchange=()=>{ if($('saveKey').checked) localStorage.setItem('gemKey',$('apiKey').value); };
+$('model').onchange=()=>localStorage.setItem('gemModel',$('model').value);
+
+function getProduct(){ const p=$('product').value; return p==='__custom' ? ($('productCustom').value||'(Produkt)') : p; }
+
+// ---------- Gemini ----------
+async function gemini(prompt){
+  const key=$('apiKey').value.trim();
+  if(!key) throw new Error('Kein Gemini-API-Key hinterlegt (unten unter ⚙️).');
+  const model=$('model').value;
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+  if(!res.ok){ const t=await res.text(); throw new Error('Gemini-Fehler '+res.status+': '+t.slice(0,200)); }
+  const data=await res.json();
+  const txt=data?.candidates?.[0]?.content?.parts?.map(p=>p.text).join('')||'';
+  if(!txt) throw new Error('Leere Antwort von Gemini.');
+  return txt.trim();
+}
+
+// Storyboard verbessern
+$('btnImprove').onclick=async()=>{
+  const story=$('story').value.trim();
+  if(!story){ $('improveMsg').textContent='Bitte erst eine Idee eintippen.'; return; }
+  $('improveSpin').classList.remove('hidden'); $('improveMsg').textContent='Gemini denkt nach …';
+  try{
+    const prompt=`Du bist Werbe-Kreativdirektor:in für die Versicherung ERGO. Verbessere das folgende Storyboard für einen ${$('length').value}-Sekunden-Werbespot zum Produkt „${getProduct()}". Tonalität: ${$('tone').value}. Zielgruppe: ${$('audience').value||'allgemein'}.
+Schreibe eine klare, emotional packende, werblich starke Story in 4–7 Sätzen auf Deutsch – konkrete Bilder, eine sympathische Hauptfigur, ein klarer Nutzen der Versicherung, ein befriedigendes Ende. Keine Aufzählung, nur Fließtext. Gib NUR die verbesserte Story aus.
+
+Storyboard:
+${story}`;
+    const out=await gemini(prompt);
+    $('story').value=out; $('improveMsg').textContent='✓ verbessert';
+  }catch(e){ $('improveMsg').textContent=e.message; }
+  finally{ $('improveSpin').classList.add('hidden'); }
+};
+
+// ---------- Brief bauen ----------
+let lastBrief='';
+function buildBrief(){
+  const product=getProduct(), len=$('length').value, scenes=SCENES_BY_LEN[len];
+  const voice=VOICES.find(v=>v[0]===$('voice').value), music=MUSIC.find(m=>m[0]===$('music').value);
+  const ending=ENDINGS.find(e=>e[0]===selEnding);
+  const langs=getLangs(); const clips=scenes-1>0?scenes-1:scenes; const credits=clips*12;
+  const meta={ produkt:product, laenge_sek:Number(len), format:$('format').value, szenen_anzahl:scenes,
+    veo_clips:clips, flow_credits:credits, sprachfassungen:langs, tonalitaet:$('tone').value,
+    zielgruppe:$('audience').value||'allgemein', stimme:voice[0], stimme_beschr:voice[1],
+    musik:music[0], musik_beschr:music[1], ending:ending[1], ending_beschr:ending[2] };
+  const md=`# KI-Video Produktionsvorlage
+
+## Eckdaten
+- **Produkt:** ${product}
+- **Format:** ${meta.format}
+- **Länge:** ${len} Sek. (≈ ${scenes} Szenen à ~${(len/scenes).toFixed(1)} Sek. inkl. Markenteil)
+- **Sprachfassungen:** ${meta.sprachfassungen.join(', ')}
+- **Tonalität:** ${meta.tonalitaet}
+- **Zielgruppe:** ${meta.zielgruppe}
+- **Voiceover-Stimme:** Chirp3-HD ${voice[1]}  ·  \`${voice[0]}\`  (speakingRate 0.94)
+- **Musik-Stil:** ${music[1]}
+- **Ending:** ${ending[1]} — ${ending[2]}
+- **Aufwand (Schätzung):** ~${meta.veo_clips} Veo-Clips → **${meta.flow_credits} Flow-Credits** (12/Clip) · Bilder (Nano Banana) 0 Credits${meta.sprachfassungen.length>1?` · ×${meta.sprachfassungen.length} Sprachfassungen für Voiceover`:''}
+
+## Story / Storyboard
+${$('story').value.trim()||'(noch keine Story eingegeben)'}
+
+## Produktionspipeline
+1. **Bilder:** je Szene ein Start-Bild in Flow / Nano Banana 2 (16:9), Foto-realistisch, warmer ERGO-Look.
+2. **Bewegung:** Start-Bild in Veo 3 (Omni Flash) animieren, ~8 Sek./Clip, kein gesprochener Text von Veo.
+3. **Voiceover:** deutsche Zeilen mit Google Chirp3-HD „${voice[0]}" (speakingRate 0.94). „ERGO" als **„Ergo"** schreiben (sonst wird es buchstabiert).
+4. **Musik:** eigener Bett im Stil „${music[1].split(' — ')[0]}".
+5. **Montage (ffmpeg):** Clips mit weichen Crossfades (0.4 s), VO + Musik mischen, Limiter; Export **1080p, 16:9, H.264 yuv420p, +faststart**.
+
+## Szenen-Gerüst (${scenes} Szenen)
+${Array.from({length:scenes}).map((_,i)=>{
+  const isEnd = i>=scenes-1;
+  return `### Szene ${i+1}${isEnd?' — Markenteil / Ending':''}
+- **Bild (Flow/Nano Banana, EN):** _hier Bild-Prompt_
+- **Bewegung (Veo 3, EN):** _hier Motion-Prompt_
+- **Voiceover (DE):** _hier Sprechtext_`;
+}).join('\n\n')}
+
+## Markenteil & Ending — ${ending[1]}
+${endingSpec(ending[0], product)}
+
+## Branding & Vorgaben (verbindlich)
+- **ERGO-Rot:** ${BRAND.rot} · **Hausschrift:** ${BRAND.font}
+- **Claim:** „${BRAND.claim}"
+- **Logo:** ${BRAND.logo} (oben links durchgehend)
+- **KI-Kennzeichnung:** „${BRAND.ki_hinweis}" (unten rechts durchgehend)
+- **Wichtig:** Produkt-, Tarif- und Rechtsaussagen exakt nach Tarifbedingungen und **vor Veröffentlichung von ERGO freigeben** lassen.
+
+---
+*Erzeugt mit dem ERGO KI-Video Briefing-Generator.*`;
+  return { meta, md };
+}
+function endingSpec(id, product){
+  const cta='Jetzt absichern!';
+  if(id==='performance_cta') return `- Pastell-Eisblau-Karte: „**Der neue ${product}.**" + kurzer Nutzen-Satz (rotes Bold)\n- Roter CTA-Button: „**${cta}**" (blendet sich ein)\n- Endcard: großes rotes **ERGO** + „**${BRAND.claim}**"`;
+  if(id==='emotional_testimonial') return `- Warmes Schlussbild der Hauptfigur (lächelnd, erleichtert)\n- Ruhiger Markensatz aus dem Off, dann Endcard mit **ERGO** + „**${BRAND.claim}**"`;
+  if(id==='produkt_fokus') return `- Produktname groß: „**${product}**"\n- 1–2 Nutzen-Stichpunkte + CTA-URL\n- Endcard: **ERGO** + „**${BRAND.claim}**"`;
+  return `- Pastell-Eisblau-Endcard, großes rotes **ERGO** + „**${BRAND.claim}**"\n- Ruhiger, vertrauensvoller Abschluss (2–3 Sek. stehen lassen)`;
+}
+
+$('btnGenerate').onclick=()=>{
+  const {md}=buildBrief(); lastBrief=md;
+  $('briefView').textContent=md;
+  $('emptyState').classList.add('hidden'); $('output').classList.remove('hidden');
+  $('btnElaborate').classList.remove('hidden'); $('btnElaborate').classList.add('flex');
+  // YouTube-Felder vorbefüllen
+  if(!$('ytTitle').value) $('ytTitle').value=getProduct()+' — '+$('length').value+'s Spot';
+  if(!$('ytDesc').value) $('ytDesc').value=($('story').value.trim().slice(0,400))+'\n\n'+BRAND.ki_hinweis;
+  if(!$('ytTags').value) $('ytTags').value=['ERGO',getProduct(),'Versicherung','KI Video'].join(', ');
+  // Version v1 anlegen
+  versions=[]; curVer=0; pushVersion($('story').value.trim()||'(keine Story)', md, '');
+  // Fortschritt: Briefing erledigt
+  if(!progress[0]){ progress[0]=true; saveProgress(); }
+  $('briefView').scrollIntoView({behavior:'smooth',block:'nearest'});
+};
+
+// Szenen & Veo-Prompts mit Gemini ausarbeiten
+$('btnElaborate').onclick=async()=>{
+  if(!$('story').value.trim()){ alert('Bitte erst eine Story eingeben.'); return; }
+  $('elabSpin').classList.remove('hidden');
+  const {meta}=buildBrief();
+  try{
+    const prompt=`Du bist Werbe-Regisseur:in und Prompt-Engineer für die KI-Video-Pipeline (Google Flow / Nano Banana Bilder → Veo 3 Bewegung → deutsches Voiceover mit Chirp3-HD).
+Erstelle eine vollständige, produktionsfertige Szenen-Liste für einen Werbespot.
+
+PRODUKT: ${meta.produkt}
+LÄNGE: ${meta.laenge_sek} Sekunden, ${meta.szenen_anzahl} Szenen (die letzte ist der Marken-/Ending-Teil: "${meta.ending}").
+TONALITÄT: ${meta.tonalitaet}. ZIELGRUPPE: ${meta.zielgruppe}.
+STORY: ${$('story').value.trim()}
+
+Gib das Ergebnis als sauberes Markdown aus. Für JEDE Szene exakt:
+### Szene N (Dauer ~X Sek.)
+- **Bild (EN):** ein fotorealistischer Nano-Banana-Bild-Prompt auf Englisch, 16:9, warmer Look, klare Bildaussage.
+- **Bewegung (EN):** ein Veo-3-Motion-Prompt auf Englisch (Kamera, Aktion, Stimmung), Hinweis "no spoken dialogue, no on-screen text".
+- **Voiceover (DE):** ein gesprochener deutscher Satz; schreibe die Marke als "Ergo".${meta.sprachfassungen.filter(l=>l!=='Deutsch').length?'\n- **Voiceover Übersetzungen:** zusätzlich denselben Satz in: '+meta.sprachfassungen.filter(l=>l!=='Deutsch').join(', ')+' (je eine Zeile pro Sprache).':''}
+
+Regeln: keine On-Screen-Texte/Logos von Veo erzeugen (kommen als Overlay). Letzte Szene = Markenteil im ERGO-Stil mit Claim "Einfach, weil's wichtig ist.". Antworte NUR mit dem Markdown der Szenen.`;
+    const out=await gemini(prompt);
+    // Szenen-Gerüst im Brief ersetzen
+    lastBrief = lastBrief.replace(/## Szenen-Gerüst[\s\S]*?(?=\n## Markenteil)/, '## Szenen (ausgearbeitet)\n'+out+'\n\n');
+    $('briefView').textContent=lastBrief;
+  }catch(e){ alert(e.message); }
+  finally{ $('elabSpin').classList.add('hidden'); }
+};
+
+// Download / Copy
+function dl(name, text, type){ const b=new Blob([text],{type}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(b); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+function slug(){ return getProduct().replace(/[^a-zA-Z0-9]+/g,'_')+'_'+$('length').value+'s'; }
+$('btnMd').onclick=()=>dl('Briefing_'+slug()+'.md', lastBrief, 'text/markdown');
+$('btnJson').onclick=()=>{ const {meta}=buildBrief(); dl('Briefing_'+slug()+'.json',
+  JSON.stringify({...meta, story:$('story').value.trim(), markdown:lastBrief}, null, 2), 'application/json'); };
+$('btnCopy').onclick=async()=>{ try{ await navigator.clipboard.writeText(lastBrief); $('btnCopy').textContent='✓ Kopiert'; setTimeout(()=>$('btnCopy').textContent='📋 Kopieren',1500);}catch(e){ alert('Kopieren nicht möglich.'); } };
+
+// ---------- Feedback & Versionen ----------
+let versions=[], curVer=0;
+function pushVersion(story, brief, fb){ versions.push({v:versions.length+1, story, brief, feedback:fb||''}); curVer=versions.length; $('verBadge').textContent='v'+curVer; renderVersions(); }
+function renderVersions(){ const box=$('verList'); box.innerHTML=''; versions.forEach(ver=>{ const el=document.createElement('button');
+  el.className='block w-full text-left text-xs px-2 py-1 rounded '+(ver.v===curVer?'text-ergo-red font-semibold':'hover:bg-gray-100 text-gray-600');
+  el.style.background=ver.v===curVer?'#fdecee':''; el.textContent='v'+ver.v+' — '+(ver.feedback?ver.feedback.slice(0,42):'Erstfassung');
+  el.onclick=()=>{ $('story').value=ver.story; lastBrief=ver.brief; $('briefView').textContent=ver.brief; curVer=ver.v; $('verBadge').textContent='v'+ver.v; renderVersions(); };
+  box.appendChild(el); }); }
+$('btnRevise').onclick=async()=>{
+  const fb=$('feedback').value.trim();
+  if(!fb){ $('reviseMsg').textContent='Bitte Verbesserung eingeben.'; return; }
+  if(!$('story').value.trim()){ $('reviseMsg').textContent='Bitte erst „Briefing erzeugen".'; return; }
+  $('reviseSpin').classList.remove('hidden'); $('reviseMsg').textContent='Gemini überarbeitet …';
+  try{
+    if(versions.length===0){ const {md}=buildBrief(); pushVersion($('story').value.trim(), md, ''); }
+    const prompt=`Überarbeite das folgende Storyboard für einen ${$('length').value}-Sekunden-ERGO-Werbespot (Produkt: ${getProduct()}, Tonalität: ${$('tone').value}) anhand dieses Feedbacks: "${fb}". Behalte die Grundidee, setze das Feedback klar um. Gib NUR die überarbeitete deutsche Story als Fließtext aus.\n\nStory:\n${$('story').value.trim()}`;
+    const newStory=await gemini(prompt);
+    $('story').value=newStory;
+    const {md}=buildBrief(); lastBrief=md; $('briefView').textContent=md;
+    $('emptyState').classList.add('hidden'); $('output').classList.remove('hidden');
+    pushVersion(newStory, md, fb);
+    $('feedback').value=''; $('reviseMsg').textContent='✓ v'+curVer+' erstellt';
+  }catch(e){ $('reviseMsg').textContent=e.message; }
+  finally{ $('reviseSpin').classList.add('hidden'); }
+};
+
+// ---------- YouTube-Upload ----------
+if(localStorage.getItem('ytClientId')) $('ytClientId').value=localStorage.getItem('ytClientId');
+$('ytClientId').onchange=()=>localStorage.setItem('ytClientId',$('ytClientId').value.trim());
+function getYtToken(){
+  return new Promise((resolve,reject)=>{
+    const cid=$('ytClientId').value.trim();
+    if(!cid){ reject(new Error('Bitte OAuth-Client-ID eintragen (Einrichtung).')); return; }
+    if(!(window.google&&google.accounts&&google.accounts.oauth2)){ reject(new Error('Google-Login lädt noch – kurz warten und erneut versuchen.')); return; }
+    const tc=google.accounts.oauth2.initTokenClient({client_id:cid, scope:'https://www.googleapis.com/auth/youtube.upload',
+      callback:r=>{ r.error?reject(new Error(r.error)):resolve(r.access_token); }});
+    tc.requestAccessToken({prompt:''});
+  });
+}
+function ytUpload(token,file,meta,onProg){
+  return new Promise((resolve,reject)=>{
+    const b='---rb'+Date.now();
+    const metaPart='--'+b+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(meta)+'\r\n';
+    const head='--'+b+'\r\nContent-Type: '+(file.type||'video/*')+'\r\n\r\n';
+    const tail='\r\n--'+b+'--';
+    const r=new FileReader();
+    r.onload=()=>{ const body=new Blob([metaPart,head,new Uint8Array(r.result),tail]);
+      const x=new XMLHttpRequest();
+      x.open('POST','https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status');
+      x.setRequestHeader('Authorization','Bearer '+token);
+      x.setRequestHeader('Content-Type','multipart/related; boundary='+b);
+      x.upload.onprogress=e=>{ if(e.lengthComputable) onProg(e.loaded/e.total); };
+      x.onload=()=>{ (x.status>=200&&x.status<300)?resolve(JSON.parse(x.responseText)):reject(new Error('YouTube '+x.status+': '+x.responseText.slice(0,250))); };
+      x.onerror=()=>reject(new Error('Netzwerkfehler beim Upload.'));
+      x.send(body); };
+    r.onerror=()=>reject(new Error('Datei nicht lesbar.'));
+    r.readAsArrayBuffer(file);
+  });
+}
+$('btnYtUpload').onclick=async()=>{
+  const file=$('ytFile').files[0];
+  if(!file){ $('ytMsg').textContent='Bitte Videodatei wählen.'; return; }
+  $('ytMsg').textContent='Anmeldung bei Google …'; $('ytLink').classList.add('hidden');
+  try{
+    const token=await getYtToken();
+    const meta={ snippet:{ title:($('ytTitle').value||'ERGO Spot').slice(0,100),
+      description:$('ytDesc').value||'', tags:($('ytTags').value||'').split(',').map(s=>s.trim()).filter(Boolean), categoryId:'22' },
+      status:{ privacyStatus:$('ytPrivacy').value, selfDeclaredMadeForKids:false } };
+    const pub=$('ytPublishAt').value;
+    if(pub){ meta.status.privacyStatus='private'; meta.status.publishAt=new Date(pub).toISOString(); }
+    $('ytBarWrap').classList.remove('hidden'); $('ytBar').style.width='0%'; $('ytMsg').textContent='Lädt hoch …';
+    const res=await ytUpload(token,file,meta,p=>{ $('ytBar').style.width=Math.round(p*100)+'%'; });
+    $('ytMsg').textContent='✓ Upload fertig'; $('ytLink').href='https://youtu.be/'+res.id; $('ytLink').classList.remove('hidden');
+  }catch(e){ $('ytMsg').textContent=e.message; }
+};
+
+// ---------- Format, Sprachen, Kostenschätzer ----------
+function getLangs(){ return Array.from($('langs').selectedOptions).map(o=>o.value); }
+function updateCost(){
+  const len=$('length').value, scenes=SCENES_BY_LEN[len], clips=scenes-1>0?scenes-1:scenes;
+  const langs=getLangs();
+  $('costEst').innerHTML=`<b>Aufwand-Schätzung:</b> ~${scenes} Szenen · ~${clips} Veo-Clips · <b>${clips*12} Flow-Credits</b> (12/Clip) · Bilder 0 Credits`+
+    (langs.length>1?` · ${langs.length} Sprachfassungen (Voiceover)`:'');
+}
+$('length').addEventListener('change',updateCost); $('langs').addEventListener('change',updateCost); updateCost();
+
+// ---------- Vorlagen-Bibliothek ----------
+const FIELDS=['product','productCustom','length','tone','format','audience','story','voice','music'];
+function currentState(){ const s={}; FIELDS.forEach(f=>s[f]=$(f).value); s.langs=getLangs(); s.ending=selEnding; return s; }
+function applyState(s){ FIELDS.forEach(f=>{ if(s[f]!==undefined) $(f).value=s[f]; });
+  $('productCustom').classList.toggle('hidden', $('product').value!=='__custom');
+  if(s.langs){ Array.from($('langs').options).forEach(o=>o.selected=s.langs.includes(o.value)); }
+  if(s.ending){ selEnding=s.ending; document.querySelectorAll('#endings .pill').forEach((p,i)=>p.classList.toggle('sel',ENDINGS[i][0]===s.ending)); }
+  voiceDesc(); musicDesc(); updateCost(); }
+function loadTpls(){ return JSON.parse(localStorage.getItem('templates')||'{}'); }
+function renderTpls(){ const t=loadTpls(); const sel=$('tplSelect'); sel.innerHTML='<option value="">— laden —</option>';
+  Object.keys(t).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); }); }
+$('tplSave').onclick=()=>{ const name=prompt('Name der Vorlage:'); if(!name) return; const t=loadTpls(); t[name]=currentState(); localStorage.setItem('templates',JSON.stringify(t)); renderTpls(); $('tplSelect').value=name; };
+$('tplLoad').onclick=()=>{ const n=$('tplSelect').value; if(!n) return; const t=loadTpls(); if(t[n]) applyState(t[n]); };
+$('tplDel').onclick=()=>{ const n=$('tplSelect').value; if(!n) return; const t=loadTpls(); delete t[n]; localStorage.setItem('templates',JSON.stringify(t)); renderTpls(); };
+renderTpls();
+
+// ---------- A/B-Hooks ----------
+$('btnHooks').onclick=async()=>{
+  if(!$('story').value.trim()){ $('improveMsg').textContent='Bitte erst eine Idee eintippen.'; return; }
+  $('hooksSpin').classList.remove('hidden');
+  try{
+    const prompt=`Entwickle für einen ${$('length').value}-Sekunden-ERGO-Werbespot (Produkt: ${getProduct()}, Tonalität: ${$('tone').value}) ZWEI deutlich unterschiedliche Eröffnungs-Hooks (die ersten 3 Sekunden), die Aufmerksamkeit fesseln. Basierend auf dieser Story: ${$('story').value.trim()}
+Gib genau zwei Varianten aus, jeweils 1–2 Sätze, getrennt durch eine Zeile mit nur "---". Keine Überschriften.`;
+    const out=await gemini(prompt);
+    const parts=out.split(/\n?---\n?/).map(s=>s.trim()).filter(Boolean).slice(0,2);
+    const box=$('hooksOut'); box.innerHTML=''; box.classList.remove('hidden');
+    ['A','B'].forEach((lbl,i)=>{ const txt=parts[i]||'(keine Variante)';
+      const el=document.createElement('div'); el.className='border border-gray-200 rounded-lg p-2 text-xs';
+      el.innerHTML=`<div class="font-bold text-ergo-red mb-1">Hook ${lbl}</div><div class="text-gray-700">${txt.replace(/</g,'&lt;')}</div>`;
+      const b=document.createElement('button'); b.className='mt-2 text-[11px] bg-ergo-petrol text-white px-2 py-1 rounded'; b.textContent='Als Story-Start übernehmen';
+      b.onclick=()=>{ $('story').value=txt+'\n\n'+$('story').value; }; el.appendChild(b); box.appendChild(el); });
+  }catch(e){ $('improveMsg').textContent=e.message; }
+  finally{ $('hooksSpin').classList.add('hidden'); }
+};
+
+// ---------- Thumbnail-Generator ----------
+$('btnThumb').onclick=()=>{
+  const c=$('thumbCanvas'), x=c.getContext('2d');
+  const fmt=$('format').value; c.width = fmt==='9:16'?720:fmt==='1:1'?1080:1280; c.height = fmt==='9:16'?1280:fmt==='1:1'?1080:720;
+  const W=c.width,H=c.height, style=$('thumbStyle').value;
+  const ice=style==='ice';
+  x.fillStyle = ice?'#CCEBED':'#BF1528'; x.fillRect(0,0,W,H);
+  x.fillStyle = ice?'#BF1528':'#FFFFFF';
+  x.font='bold '+Math.round(W*0.12)+'px Arial'; x.textBaseline='middle';
+  x.fillText('ERGO', W*0.07, H*0.30);
+  // Produkt
+  x.fillStyle = ice?'#545241':'#FFFFFF'; x.font='bold '+Math.round(W*0.055)+'px Arial';
+  wrap(x, getProduct(), W*0.07, H*0.50, W*0.86, Math.round(W*0.065));
+  // Claim
+  x.fillStyle = ice?'#BF1528':'#FFEEDD'; x.font='bold '+Math.round(W*0.045)+'px Arial';
+  x.fillText("Einfach, weil's wichtig ist.", W*0.07, H*0.88);
+  c.classList.remove('hidden'); $('btnThumbDl').classList.remove('hidden');
+};
+function wrap(x,text,px,py,maxW,lh){ const words=text.split(' '); let line='',yy=py;
+  for(const w of words){ const t=line+w+' '; if(x.measureText(t).width>maxW && line){ x.fillText(line.trim(),px,yy); line=w+' '; yy+=lh; } else line=t; } x.fillText(line.trim(),px,yy); }
+$('btnThumbDl').onclick=()=>{ const a=document.createElement('a'); a.href=$('thumbCanvas').toDataURL('image/png'); a.download='Thumbnail_'+slug()+'.png'; a.click(); };
+
+// ---------- Produktionsfortschritt ----------
+const STAGES=['Briefing','Bilder (Flow)','Clips (Veo 3)','Voiceover','Musik','Montage','Freigabe & Export'];
+let progress=JSON.parse(localStorage.getItem('progress')||'null') || STAGES.map(()=>false);
+function renderProgress(){
+  const box=$('stages'); box.innerHTML='';
+  STAGES.forEach((s,i)=>{
+    const done=progress[i];
+    const el=document.createElement('button');
+    el.className='pill text-left border rounded-lg px-2 py-2 text-xs flex items-center gap-2 '+(done?'border-ergo-red bg-fdecee text-gray-800':'border-gray-200 text-gray-500');
+    if(done) el.style.background='#fdecee';
+    el.innerHTML=`<span class="w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold ${done?'bg-ergo-red text-white':'bg-gray-200 text-gray-500'}">${done?'✓':i+1}</span><span class="font-semibold leading-tight">${s}</span>`;
+    el.onclick=()=>{ if(i===STAGES.length-1 && !progress[i] && !$('freigabe').checked){ alert('Bitte zuerst die rechtliche/Marken-Freigabe bestätigen (Häkchen links).'); return; } progress[i]=!progress[i]; saveProgress(); };
+    box.appendChild(el);
+  });
+  const pct=Math.round(progress.filter(Boolean).length/STAGES.length*100);
+  $('progBar').style.width=pct+'%'; $('progPct').textContent=pct+' %';
+}
+function saveProgress(){ localStorage.setItem('progress',JSON.stringify(progress)); renderProgress(); }
+$('progReset').onclick=()=>{ progress=STAGES.map(()=>false); saveProgress(); };
+renderProgress();
+</script>
+</body>
+</html>
