@@ -3,37 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KI-Video Briefing-Generator · ERGO</title>
+<title>KI-Video Studio · ERGO</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script>
   tailwind.config = {
-    theme: { extend: { colors: {
-      ergo: { red: '#BF1528', dark: '#8E0F1E', ice: '#CCEBED', petrol: '#0F94A7', grey: '#545241' }
-    }, fontFamily: { sans: ['Arial', 'Helvetica', 'sans-serif'] } } }
+    theme: { extend: {
+      colors: { ergo: { red: '#BF1528', dark: '#8E0F1E', ice: '#CCEBED', petrol: '#0F94A7', grey: '#545241' } },
+      fontFamily: { sans: ['Inter', 'system-ui', 'Arial', 'sans-serif'] },
+      boxShadow: { soft: '0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.06)' }
+    } }
   }
 </script>
 <style>
-  body { background: #f4f4f2; }
-  .card { background:#fff; border:1px solid #e6e6e3; border-radius:14px; }
-  textarea, input, select { outline:none; }
-  textarea:focus, input:focus, select:focus { border-color:#BF1528; box-shadow:0 0 0 3px rgba(191,21,40,.12); }
+  :root { --ergo:#BF1528; --ergo-dark:#8E0F1E; }
+  body { background:#f6f7f9; background-image: radial-gradient(1200px 500px at 100% -10%, #fde7ea 0%, transparent 55%), radial-gradient(900px 400px at -10% 0%, #e6f4f6 0%, transparent 50%); }
+  .card { background:#fff; border:1px solid #edeef1; border-radius:18px; box-shadow:0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.05); }
+  .card:hover { box-shadow:0 2px 4px rgba(16,24,40,.05), 0 10px 28px rgba(16,24,40,.08); transition:box-shadow .25s ease; }
+  textarea, input, select { outline:none; transition:border-color .15s, box-shadow .15s; }
+  textarea:focus, input:focus, select:focus { border-color:var(--ergo); box-shadow:0 0 0 3px rgba(191,21,40,.12); }
   .pill { transition:all .15s ease; }
-  .pill.sel { border-color:#BF1528; background:#fdecee; }
+  .pill.sel { border-color:var(--ergo); background:#fdecee; box-shadow:0 0 0 3px rgba(191,21,40,.08); }
+  .btn-primary { background:linear-gradient(180deg,#d11a30,#BF1528); box-shadow:0 1px 2px rgba(191,21,40,.3), 0 6px 16px rgba(191,21,40,.25); transition:transform .12s, box-shadow .2s, filter .2s; }
+  .btn-primary:hover { filter:brightness(1.05); box-shadow:0 2px 4px rgba(191,21,40,.3), 0 10px 22px rgba(191,21,40,.3); }
+  .btn-primary:active { transform:translateY(1px); }
   .spin { animation:spin 1s linear infinite; } @keyframes spin { to { transform:rotate(360deg); } }
   pre { white-space:pre-wrap; word-break:break-word; }
+  .sec-ico { width:28px; height:28px; border-radius:9px; display:grid; place-items:center; font-size:14px; }
+  ::-webkit-scrollbar { width:10px; height:10px; } ::-webkit-scrollbar-thumb { background:#d6d8dd; border-radius:8px; } ::-webkit-scrollbar-thumb:hover { background:#bfc2c8; }
 </style>
 </head>
 <body class="font-sans text-ergo-grey">
 
-<header class="bg-white border-b border-gray-200">
-  <div class="max-w-5xl mx-auto px-5 py-4 flex items-center gap-3">
-    <div class="text-ergo-red font-bold text-3xl tracking-tight">ERGO</div>
-    <div class="h-7 w-px bg-gray-300"></div>
-    <div>
-      <h1 class="text-lg font-bold text-gray-800 leading-tight">KI-Video Briefing-Generator</h1>
-      <p class="text-xs text-gray-500 leading-tight">Vom Briefing zur Produktionsvorlage · Flow → Veo 3 → Chirp3-HD „Leda" → Montage</p>
+<div style="height:4px;background:linear-gradient(90deg,#BF1528,#0F94A7)"></div>
+<header class="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-20">
+  <div class="max-w-5xl mx-auto px-5 py-3 flex items-center gap-3">
+    <div class="text-ergo-red font-extrabold text-3xl tracking-tight">ERGO</div>
+    <div class="h-8 w-px bg-gray-200"></div>
+    <div class="flex-1">
+      <h1 class="text-base font-bold text-gray-900 leading-tight">KI-Video Studio</h1>
+      <p class="text-xs text-gray-500 leading-tight">Briefing → Veo 3 → Chirp3-HD „Leda" → Cloud-Spot</p>
     </div>
+    <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-ergo-petrol bg-cyan-50 border border-cyan-100 rounded-full px-3 py-1">● KI-Studio</span>
   </div>
 </header>
 
@@ -204,11 +218,44 @@
       </label>
     </div>
 
-    <button id="btnGenerate" class="w-full bg-ergo-red text-white font-bold py-3 rounded-xl hover:bg-ergo-dark text-lg shadow">Briefing erzeugen →</button>
+    <button id="btnGenerate" class="w-full btn-primary text-white font-bold py-3.5 rounded-2xl text-lg">Briefing erzeugen →</button>
   </section>
 
   <!-- ===== RECHTE SPALTE: AUSGABE ===== -->
   <section class="space-y-4">
+
+    <!-- Cloud-Autopilot -->
+    <div class="card p-5 border-2" style="border-color:#fbd5da">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="sec-ico text-white" style="background:linear-gradient(135deg,#BF1528,#0F94A7)">🚀</span>
+        <h2 class="font-bold text-gray-900">Cloud-Autopilot</h2>
+        <span class="text-[10px] font-semibold text-ergo-petrol bg-cyan-50 border border-cyan-100 rounded-full px-2 py-0.5">vollautomatisch</span>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">Erzeugt aus dem Briefing automatisch einen fertigen Spot (Imagen → Veo 3 → Voiceover → Montage) und speichert ihn in der Cloud.</p>
+      <details class="mb-3">
+        <summary class="text-xs text-gray-600 cursor-pointer font-semibold">⚙️ Backend-Verbindung — einmalig</summary>
+        <input id="cloudUrl" type="text" placeholder="https://ki-video-autopilot-….a.run.app" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs mt-2">
+        <p class="text-[11px] text-gray-400 mt-1">Die Cloud-Run-URL aus dem Deploy (siehe cloud-autopilot/DEPLOY.md). Wird lokal gespeichert.</p>
+      </details>
+      <button id="btnCloud" class="w-full btn-primary text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
+        <span id="cloudSpin" class="hidden inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full spin"></span>
+        Spot vollautomatisch erzeugen
+      </button>
+      <div id="cloudProg" class="hidden mt-3">
+        <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden"><div id="cloudBar" class="h-full bg-ergo-petrol transition-all" style="width:0%"></div></div>
+        <p id="cloudMsg" class="text-xs text-gray-500 mt-1.5"></p>
+      </div>
+      <div id="cloudResult" class="hidden mt-3">
+        <video id="cloudVideo" controls class="w-full rounded-xl border border-gray-200 bg-black"></video>
+        <div class="flex flex-wrap items-center gap-2 mt-3">
+          <button id="btnApprove" class="bg-green-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-green-700">✅ Freigeben</button>
+          <button id="btnToFeedback" class="bg-white border border-ergo-petrol text-ergo-petrol text-sm font-semibold px-4 py-2 rounded-xl hover:bg-teal-50">🔁 In Feedback-Schleife</button>
+          <a id="cloudDownload" class="text-sm text-ergo-petrol underline ml-auto" target="_blank" download>⬇︎ MP4</a>
+        </div>
+        <p id="approveMsg" class="text-xs text-green-700 mt-2"></p>
+      </div>
+    </div>
+
     <div class="card p-5">
       <div class="flex items-center justify-between mb-3">
         <h2 class="font-bold text-gray-800">Produktionsvorlage</h2>
@@ -462,13 +509,10 @@ $('btnGenerate').onclick=()=>{
   $('briefView').textContent=md;
   $('emptyState').classList.add('hidden'); $('output').classList.remove('hidden');
   $('btnElaborate').classList.remove('hidden'); $('btnElaborate').classList.add('flex');
-  // YouTube-Felder vorbefüllen
   if(!$('ytTitle').value) $('ytTitle').value=getProduct()+' — '+$('length').value+'s Spot';
   if(!$('ytDesc').value) $('ytDesc').value=($('story').value.trim().slice(0,400))+'\n\n'+BRAND.ki_hinweis;
   if(!$('ytTags').value) $('ytTags').value=['ERGO',getProduct(),'Versicherung','KI Video'].join(', ');
-  // Version v1 anlegen
   versions=[]; curVer=0; pushVersion($('story').value.trim()||'(keine Story)', md, '');
-  // Fortschritt: Briefing erledigt
   if(!progress[0]){ progress[0]=true; saveProgress(); }
   $('briefView').scrollIntoView({behavior:'smooth',block:'nearest'});
 };
@@ -495,7 +539,6 @@ Gib das Ergebnis als sauberes Markdown aus. Für JEDE Szene exakt:
 
 Regeln: keine On-Screen-Texte/Logos von Veo erzeugen (kommen als Overlay). Letzte Szene = Markenteil im ERGO-Stil mit Claim "Einfach, weil's wichtig ist.". Antworte NUR mit dem Markdown der Szenen.`;
     const out=await gemini(prompt);
-    // Szenen-Gerüst im Brief ersetzen
     lastBrief = lastBrief.replace(/## Szenen-Gerüst[\s\S]*?(?=\n## Markenteil)/, '## Szenen (ausgearbeitet)\n'+out+'\n\n');
     $('briefView').textContent=lastBrief;
   }catch(e){ alert(e.message); }
@@ -642,10 +685,8 @@ $('btnThumb').onclick=()=>{
   x.fillStyle = ice?'#BF1528':'#FFFFFF';
   x.font='bold '+Math.round(W*0.12)+'px Arial'; x.textBaseline='middle';
   x.fillText('ERGO', W*0.07, H*0.30);
-  // Produkt
   x.fillStyle = ice?'#545241':'#FFFFFF'; x.font='bold '+Math.round(W*0.055)+'px Arial';
   wrap(x, getProduct(), W*0.07, H*0.50, W*0.86, Math.round(W*0.065));
-  // Claim
   x.fillStyle = ice?'#BF1528':'#FFEEDD'; x.font='bold '+Math.round(W*0.045)+'px Arial';
   x.fillText("Einfach, weil's wichtig ist.", W*0.07, H*0.88);
   c.classList.remove('hidden'); $('btnThumbDl').classList.remove('hidden');
@@ -653,6 +694,44 @@ $('btnThumb').onclick=()=>{
 function wrap(x,text,px,py,maxW,lh){ const words=text.split(' '); let line='',yy=py;
   for(const w of words){ const t=line+w+' '; if(x.measureText(t).width>maxW && line){ x.fillText(line.trim(),px,yy); line=w+' '; yy+=lh; } else line=t; } x.fillText(line.trim(),px,yy); }
 $('btnThumbDl').onclick=()=>{ const a=document.createElement('a'); a.href=$('thumbCanvas').toDataURL('image/png'); a.download='Thumbnail_'+slug()+'.png'; a.click(); };
+
+// ---------- Cloud-Autopilot ----------
+if(localStorage.getItem('cloudUrl')) $('cloudUrl').value=localStorage.getItem('cloudUrl');
+$('cloudUrl').onchange=()=>localStorage.setItem('cloudUrl',$('cloudUrl').value.trim());
+let cloudVideoUrl='';
+$('btnCloud').onclick=async()=>{
+  const base=$('cloudUrl').value.trim().replace(/\/+$/,'');
+  $('cloudProg').classList.remove('hidden');
+  if(!base){ $('cloudMsg').textContent='Bitte zuerst die Backend-URL eintragen (⚙️).'; return; }
+  if(!$('story').value.trim()){ $('cloudMsg').textContent='Bitte erst eine Story eingeben.'; return; }
+  const {meta}=buildBrief(); const brief={...meta, story:$('story').value.trim()};
+  $('cloudSpin').classList.remove('hidden'); $('btnCloud').disabled=true;
+  $('cloudResult').classList.add('hidden'); $('cloudBar').style.width='3%'; $('cloudMsg').textContent='Auftrag wird gestartet …';
+  try{
+    const r=await fetch(base+'/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(brief)});
+    if(!r.ok) throw new Error('Start fehlgeschlagen ('+r.status+'): '+(await r.text()).slice(0,150));
+    const j=await r.json(); if(j.error) throw new Error(j.error);
+    while(true){
+      await new Promise(s=>setTimeout(s,5000));
+      const st=await (await fetch(base+'/status/'+j.job_id)).json();
+      $('cloudBar').style.width=(st.pct||0)+'%'; $('cloudMsg').textContent=st.msg||st.state;
+      if(st.state==='done'){ cloudVideoUrl=st.video_url; showCloudResult(st.video_url); break; }
+      if(st.state==='error') throw new Error(st.error||'Fehler in der Produktion');
+    }
+  }catch(e){ $('cloudMsg').textContent='⚠ '+e.message; }
+  finally{ $('cloudSpin').classList.add('hidden'); $('btnCloud').disabled=false; }
+};
+function showCloudResult(url){
+  $('cloudResult').classList.remove('hidden'); $('cloudVideo').src=url; $('cloudDownload').href=url;
+  $('cloudMsg').textContent='✓ Spot fertig — anschauen und entscheiden.';
+  [1,2,3,4,5].forEach(i=>progress[i]=true); saveProgress();
+}
+$('btnApprove').onclick=()=>{
+  if(!$('freigabe').checked){ $('approveMsg').className='text-xs text-red-600 mt-2'; $('approveMsg').textContent='Bitte zuerst die Marken-/Rechtsfreigabe (Häkchen links) bestätigen.'; return; }
+  progress[6]=true; saveProgress();
+  $('approveMsg').className='text-xs text-green-700 mt-2'; $('approveMsg').textContent='✅ Freigegeben — bereit zur Veröffentlichung (z. B. via YouTube).';
+};
+$('btnToFeedback').onclick=()=>{ $('feedback').focus(); $('feedback').scrollIntoView({behavior:'smooth',block:'center'}); };
 
 // ---------- Produktionsfortschritt ----------
 const STAGES=['Briefing','Bilder (Flow)','Clips (Veo 3)','Voiceover','Musik','Montage','Freigabe & Export'];
@@ -662,7 +741,7 @@ function renderProgress(){
   STAGES.forEach((s,i)=>{
     const done=progress[i];
     const el=document.createElement('button');
-    el.className='pill text-left border rounded-lg px-2 py-2 text-xs flex items-center gap-2 '+(done?'border-ergo-red bg-fdecee text-gray-800':'border-gray-200 text-gray-500');
+    el.className='pill text-left border rounded-lg px-2 py-2 text-xs flex items-center gap-2 '+(done?'border-ergo-red text-gray-800':'border-gray-200 text-gray-500');
     if(done) el.style.background='#fdecee';
     el.innerHTML=`<span class="w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold ${done?'bg-ergo-red text-white':'bg-gray-200 text-gray-500'}">${done?'✓':i+1}</span><span class="font-semibold leading-tight">${s}</span>`;
     el.onclick=()=>{ if(i===STAGES.length-1 && !progress[i] && !$('freigabe').checked){ alert('Bitte zuerst die rechtliche/Marken-Freigabe bestätigen (Häkchen links).'); return; } progress[i]=!progress[i]; saveProgress(); };
