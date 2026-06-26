@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KI-Video Studio · ERGO</title>
+<meta name="theme-color" content="#BF1528">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KI-Studio">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -656,7 +664,9 @@ function loadTpls(){ return JSON.parse(localStorage.getItem('templates')||'{}');
 function renderTpls(){ const t=loadTpls(); const sel=$('tplSelect'); sel.innerHTML='<option value="">— laden —</option>';
   Object.keys(t).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); }); }
 $('tplSave').onclick=()=>{ const name=prompt('Name der Vorlage:'); if(!name) return; const t=loadTpls(); t[name]=currentState(); localStorage.setItem('templates',JSON.stringify(t)); renderTpls(); $('tplSelect').value=name; };
-$('tplLoad').onclick=()=>{ const n=$('tplSelect').value; if(!n) return; const t=loadTpls(); if(t[n]) applyState(t[n]); };
+function doLoadTpl(){ const n=$('tplSelect').value; if(!n){ return; } const t=loadTpls(); if(t[n]){ applyState(t[n]); } else { alert('Vorlage nicht gefunden.'); } }
+$('tplLoad').onclick=doLoadTpl;
+$('tplSelect').onchange=doLoadTpl;
 $('tplDel').onclick=()=>{ const n=$('tplSelect').value; if(!n) return; const t=loadTpls(); delete t[n]; localStorage.setItem('templates',JSON.stringify(t)); renderTpls(); };
 renderTpls();
 
@@ -762,15 +772,4 @@ function renderProgress(){
     el.className='pill text-left border rounded-lg px-2 py-2 text-xs flex items-center gap-2 '+(done?'border-ergo-red text-gray-800':'border-gray-200 text-gray-500');
     if(done) el.style.background='#fdecee';
     el.innerHTML=`<span class="w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold ${done?'bg-ergo-red text-white':'bg-gray-200 text-gray-500'}">${done?'✓':i+1}</span><span class="font-semibold leading-tight">${s}</span>`;
-    el.onclick=()=>{ if(i===STAGES.length-1 && !progress[i] && !$('freigabe').checked){ alert('Bitte zuerst die rechtliche/Marken-Freigabe bestätigen (Häkchen links).'); return; } progress[i]=!progress[i]; saveProgress(); };
-    box.appendChild(el);
-  });
-  const pct=Math.round(progress.filter(Boolean).length/STAGES.length*100);
-  $('progBar').style.width=pct+'%'; $('progPct').textContent=pct+' %';
-}
-function saveProgress(){ localStorage.setItem('progress',JSON.stringify(progress)); renderProgress(); }
-$('progReset').onclick=()=>{ progress=STAGES.map(()=>false); saveProgress(); };
-renderProgress(); renderSpots();
-</script>
-</body>
-</html>
+    el.onclick=()=>{ if(i===STAGES.length-1 && !progress[i] && !$('freigabe').check
