@@ -283,9 +283,9 @@
       </div>
       <p class="text-xs text-gray-500 mb-3">Erzeugt aus dem Briefing automatisch einen fertigen Spot (Imagen → Veo 3 → Voiceover → Montage) und speichert ihn in der Cloud.</p>
       <details class="mb-3">
-        <summary class="text-xs text-gray-600 cursor-pointer font-semibold">⚙️ Backend-Verbindung — einmalig</summary>
-        <input id="cloudUrl" type="text" placeholder="https://ki-video-autopilot-….a.run.app" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs mt-2">
-        <p class="text-[11px] text-gray-400 mt-1">Die Cloud-Run-URL aus dem Deploy (siehe cloud-autopilot/DEPLOY.md). Wird lokal gespeichert.</p>
+        <summary class="text-xs text-gray-600 cursor-pointer font-semibold">⚙️ Backend-Verbindung (bereits vorkonfiguriert)</summary>
+        <input id="cloudUrl" type="text" value="https://ki-video-autopilot-spj7tfr3cq-ey.a.run.app" placeholder="https://ki-video-autopilot-….a.run.app" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs mt-2">
+        <p class="text-[11px] text-gray-400 mt-1">Standard-Backend ist hinterlegt — du musst nichts eintragen. Nur ändern, wenn du ein eigenes Backend nutzt.</p>
       </details>
       <button id="btnCloud" class="w-full btn-primary text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
         <span id="cloudSpin" class="hidden inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full spin"></span>
@@ -792,7 +792,7 @@ function wrap(x,text,px,py,maxW,lh){ const words=text.split(' '); let line='',yy
 $('btnThumbDl').onclick=()=>{ const a=document.createElement('a'); a.href=$('thumbCanvas').toDataURL('image/png'); a.download='Thumbnail_'+slug()+'.png'; a.click(); };
 
 // ---------- Cloud-Autopilot ----------
-if(localStorage.getItem('cloudUrl')) $('cloudUrl').value=localStorage.getItem('cloudUrl');
+$('cloudUrl').value=localStorage.getItem('cloudUrl')||'https://ki-video-autopilot-spj7tfr3cq-ey.a.run.app';
 $('cloudUrl').onchange=()=>localStorage.setItem('cloudUrl',$('cloudUrl').value.trim());
 let cloudVideoUrl='';
 function loadSpots(){ return JSON.parse(localStorage.getItem('spots')||'[]'); }
