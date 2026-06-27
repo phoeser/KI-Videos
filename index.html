@@ -242,9 +242,10 @@
     <!-- Gemini Key -->
     <div class="card p-5">
       <details>
-        <summary class="font-semibold text-gray-700 cursor-pointer text-sm">⚙️ Gemini-API-Key (für KI-Funktionen)</summary>
+        <summary class="font-semibold text-gray-700 cursor-pointer text-sm">⚙️ Gemini-API-Key (optional — nur als Fallback)</summary>
         <div class="mt-3 space-y-2">
-          <input id="apiKey" type="password" placeholder="AIza… (Google Generative Language API)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          <p class="text-xs text-gray-500">Wenn eine Backend-Verbindung (unten) eingetragen ist, laufen die KI-Funktionen automatisch über den Server-Key — du brauchst hier <b>keinen</b> eigenen Key. Nur ohne Backend ist ein eigener Key nötig.</p>
+          <input id="apiKey" type="password" placeholder="optional: AIza… (nur ohne Backend nötig)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
           <div class="flex items-center gap-2">
             <label class="text-xs text-gray-600">Modell</label>
             <select id="model" class="border border-gray-300 rounded-lg px-2 py-1 text-xs bg-white">
@@ -335,9 +336,13 @@
       <p class="text-xs text-gray-500 mb-2">Was soll besser werden? Gemini überarbeitet Story & Brief und legt eine neue Version an.</p>
       <textarea id="feedback" rows="3" placeholder="z. B. emotionaler machen, Hauptfigur jünger, klareres Nutzenversprechen, kürzeres Ending …" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
       <div class="flex items-center gap-2 mt-2">
-        <button id="btnRevise" class="bg-ergo-petrol text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center gap-2">
-          <span id="reviseSpin" class="hidden inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full spin"></span>
-          ✨ Neue Version erzeugen
+        <button id="btnReviseGo" class="btn-primary text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2">
+          <span id="reviseGoSpin" class="hidden inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full spin"></span>
+          🚀 Neue Version + Spot automatisch
+        </button>
+        <button id="btnRevise" class="bg-white border border-ergo-petrol text-ergo-petrol text-sm font-semibold px-4 py-2 rounded-lg hover:bg-teal-50 flex items-center gap-2">
+          <span id="reviseSpin" class="hidden inline-block w-4 h-4 border-2 border-ergo-petrol border-t-transparent rounded-full spin"></span>
+          ✨ Nur Text-Version
         </button>
         <span id="reviseMsg" class="text-xs text-gray-500"></span>
       </div>
@@ -472,8 +477,25 @@ function getProduct(){ const p=$('product').value; return p==='__custom' ? ($('p
 
 // ---------- Gemini ----------
 async function gemini(prompt){
+  // 1) Bevorzugt über das Backend (Key liegt serverseitig -> Nutzer braucht keinen eigenen Key)
+  const base=(($('cloudUrl')&&$('cloudUrl').value)||'').trim().replace(/\/+$/,'');
+  if(base){
+    try{
+      const res=await fetch(base+'/llm',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({prompt})});
+      if(res.ok){
+        const data=await res.json();
+        if(data.text) return data.text.trim();
+        if(data.error) throw new Error('LLM-Fehler: '+data.error);
+      } else if(res.status!==404){
+        const t=await res.text(); throw new Error('LLM-Fehler '+res.status+': '+t.slice(0,200));
+      }
+      // 404 = altes Backend ohne /llm -> unten Browser-Key-Fallback
+    }catch(e){ if(!$('apiKey').value.trim()) throw e; }
+  }
+  // 2) Fallback: Gemini direkt aus dem Browser mit eigenem Key
   const key=$('apiKey').value.trim();
-  if(!key) throw new Error('Kein Gemini-API-Key hinterlegt (unten unter ⚙️).');
+  if(!key) throw new Error('Kein Backend-LLM erreichbar und kein Gemini-Key hinterlegt.');
   const model=$('model').value;
   const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -625,10 +647,10 @@ function renderVersions(){ const box=$('verList'); box.innerHTML=''; versions.fo
   el.style.background=ver.v===curVer?'#fdecee':''; el.textContent='v'+ver.v+' — '+(ver.feedback?ver.feedback.slice(0,42):'Erstfassung');
   el.onclick=()=>{ $('story').value=ver.story; lastBrief=ver.brief; $('briefView').textContent=ver.brief; curVer=ver.v; $('verBadge').textContent='v'+ver.v; renderVersions(); };
   box.appendChild(el); }); }
-$('btnRevise').onclick=async()=>{
+async function doRevise(){
   const fb=$('feedback').value.trim();
-  if(!fb){ $('reviseMsg').textContent='Bitte Verbesserung eingeben.'; return; }
-  if(!$('story').value.trim()){ $('reviseMsg').textContent='Bitte erst „Briefing erzeugen".'; return; }
+  if(!fb){ $('reviseMsg').textContent='Bitte Verbesserung eingeben.'; return false; }
+  if(!$('story').value.trim()){ $('reviseMsg').textContent='Bitte erst „Briefing erzeugen".'; return false; }
   $('reviseSpin').classList.remove('hidden'); $('reviseMsg').textContent='Gemini überarbeitet …';
   try{
     if(versions.length===0){ const {md}=buildBrief(); pushVersion($('story').value.trim(), md, ''); }
@@ -639,8 +661,17 @@ $('btnRevise').onclick=async()=>{
     $('emptyState').classList.add('hidden'); $('output').classList.remove('hidden');
     pushVersion(newStory, md, fb);
     $('feedback').value=''; $('reviseMsg').textContent='✓ v'+curVer+' erstellt';
-  }catch(e){ $('reviseMsg').textContent=e.message; }
+    return true;
+  }catch(e){ $('reviseMsg').textContent=e.message; return false; }
   finally{ $('reviseSpin').classList.add('hidden'); }
+}
+$('btnRevise').onclick=doRevise;
+$('btnReviseGo').onclick=async()=>{
+  const go=$('btnReviseGo'); go.disabled=true; $('reviseGoSpin').classList.remove('hidden');
+  try{
+    const ok=await doRevise();
+    if(ok){ $('reviseMsg').textContent='✓ v'+curVer+' erstellt — Spot wird jetzt erzeugt …'; await startCloud(); }
+  } finally { go.disabled=false; $('reviseGoSpin').classList.add('hidden'); }
 };
 
 // ---------- YouTube-Upload ----------
@@ -772,7 +803,7 @@ function renderSpots(){ const box=$('spotList'); if(!box) return; const s=loadSp
     el.innerHTML=`<span class="truncate text-gray-700">${sp.produkt} · ${sp.len}s · ${d}</span>`;
     const a=document.createElement('a'); a.href=sp.url; a.target='_blank'; a.className='text-ergo-petrol underline ml-2 shrink-0'; a.textContent='ansehen'; el.appendChild(a);
     box.appendChild(el); }); }
-$('btnCloud').onclick=async()=>{
+async function startCloud(){
   const base=$('cloudUrl').value.trim().replace(/\/+$/,'');
   $('cloudProg').classList.remove('hidden');
   if(!base){ $('cloudMsg').textContent='Bitte zuerst die Backend-URL eintragen (⚙️).'; return; }
@@ -780,7 +811,7 @@ $('btnCloud').onclick=async()=>{
   const {meta}=buildBrief(); const brief={...meta, story:$('story').value.trim()};
   $('cloudSpin').classList.remove('hidden'); $('btnCloud').disabled=true;
   $('cloudResult').classList.add('hidden'); $('cloudBar').style.width='3%'; $('cloudMsg').textContent='Auftrag wird gestartet …';
-  progress[0]=true; saveProgress();
+  progress=STAGES.map(()=>false); progress[0]=true; saveProgress();
   try{
     const r=await fetch(base+'/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(brief)});
     if(!r.ok) throw new Error('Start fehlgeschlagen ('+r.status+'): '+(await r.text()).slice(0,150));
@@ -795,7 +826,8 @@ $('btnCloud').onclick=async()=>{
     }
   }catch(e){ $('cloudMsg').textContent='⚠ '+e.message; }
   finally{ $('cloudSpin').classList.add('hidden'); $('btnCloud').disabled=false; }
-};
+}
+$('btnCloud').onclick=startCloud;
 function showCloudResult(url){
   $('cloudResult').classList.remove('hidden'); $('cloudVideo').src=url; $('cloudDownload').href=url;
   $('cloudMsg').textContent='✓ Spot fertig — anschauen und entscheiden.';
