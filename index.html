@@ -96,12 +96,42 @@
 
       <label class="block text-sm font-semibold mb-1">Versicherung / Produkt, das beworben wird</label>
       <select id="product" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-1 bg-white">
+        <optgroup label="Gesundheit &amp; Vorsorge">
         <option>ERGO Kieferorthopädie Sofortschutz</option>
         <option>ERGO Zahnzusatzversicherung</option>
-        <option>ERGO Gewerbe-Rechtsschutz</option>
-        <option>ERGO Privat-Rechtsschutz</option>
+        <option>ERGO Krankenzusatzversicherung</option>
+        <option>ERGO Krankenvollversicherung (DKV)</option>
+        <option>ERGO Auslandskrankenversicherung</option>
+        <option>ERGO Krankenhauszusatzversicherung</option>
+        <option>ERGO Pflegezusatzversicherung</option>
+        </optgroup>
+        <optgroup label="Vorsorge &amp; Leben">
         <option>ERGO Risikolebensversicherung</option>
-        <option>ERGO Haftpflichtversicherung</option>
+        <option>ERGO Berufsunfähigkeitsversicherung</option>
+        <option>ERGO Unfallversicherung</option>
+        <option>ERGO Private Rentenversicherung</option>
+        <option>ERGO Sterbegeldversicherung</option>
+        </optgroup>
+        <optgroup label="Recht &amp; Haftung">
+        <option>ERGO Privat-Rechtsschutz</option>
+        <option>ERGO Gewerbe-Rechtsschutz</option>
+        <option>ERGO Verkehrs-Rechtsschutz</option>
+        <option>ERGO Privathaftpflichtversicherung</option>
+        <option>ERGO Tierhalterhaftpflicht</option>
+        </optgroup>
+        <optgroup label="Haus, Wohnen &amp; Mobilität">
+        <option>ERGO Hausratversicherung</option>
+        <option>ERGO Wohngebäudeversicherung</option>
+        <option>ERGO Kfz-Versicherung</option>
+        <option>ERGO E-Bike-/Fahrradversicherung</option>
+        <option>ERGO Reiseversicherung / Reiserücktritt</option>
+        <option>ERGO Tierkrankenversicherung</option>
+        </optgroup>
+        <optgroup label="Gewerbe &amp; Business">
+        <option>ERGO Betriebshaftpflichtversicherung</option>
+        <option>ERGO Inhaltsversicherung (Gewerbe)</option>
+        <option>ERGO Cyberversicherung</option>
+        </optgroup>
         <option value="__custom">Anderes Produkt (frei eingeben) …</option>
       </select>
       <input id="productCustom" type="text" placeholder="Produktname frei eingeben" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 hidden">
@@ -125,9 +155,16 @@
           <select id="tone" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
             <option>Warm & nahbar</option>
             <option>Emotional & berührend</option>
+            <option>Sehr lustig & humorvoll</option>
             <option>Tragikomisch & augenzwinkernd</option>
-            <option>Seriös & vertrauensvoll</option>
+            <option>Frech & jung</option>
             <option>Modern & energetisch</option>
+            <option>Inspirierend & motivierend</option>
+            <option>Sachlich & informativ</option>
+            <option>Seriös & vertrauensvoll</option>
+            <option>Sehr ernst & eindringlich</option>
+            <option>Nostalgisch & herzerwärmend</option>
+            <option>Spannend & cineastisch</option>
           </select>
         </div>
       </div>
@@ -372,20 +409,34 @@ const VOICES = [
   ['de-DE-Chirp3-HD-Kore','Kore — klar & vertrauensvoll, weiblich'],
   ['de-DE-Chirp3-HD-Vindemiatrix','Vindemiatrix — sanft & seriös, weiblich'],
   ['de-DE-Chirp3-HD-Charon','Charon — ruhig & souverän, männlich'],
-  ['de-DE-Chirp3-HD-Puck','Puck — lebendig & nahbar, männlich']
+  ['de-DE-Chirp3-HD-Puck','Puck — lebendig & nahbar, männlich'],
+  ['de-DE-Chirp3-HD-Zephyr','Zephyr — hell & freundlich, weiblich'],
+  ['de-DE-Chirp3-HD-Sulafat','Sulafat — sanft & warm, weiblich'],
+  ['de-DE-Chirp3-HD-Gacrux','Gacrux — reif & vertrauensvoll, weiblich'],
+  ['de-DE-Chirp3-HD-Orus','Orus — markant & souverän, männlich'],
+  ['de-DE-Chirp3-HD-Fenrir','Fenrir — kraftvoll & energisch, männlich'],
+  ['de-DE-Chirp3-HD-Iapetus','Iapetus — sachlich & klar, männlich']
 ];
 const MUSIC = [
   ['warm_aufbauend','Warm & aufbauend — sanfter Start, hoffnungsvolle Auflösung'],
   ['modern_cool','Modern & cool — dezenter Beat, urban'],
   ['emotional_piano','Emotional — Piano & Streicher, berührend'],
   ['energetisch_upbeat','Energetisch — Upbeat-Pop, schwungvoll'],
-  ['neutral_dezent','Neutral & dezent — ruhiger Pad-Teppich']
+  ['neutral_dezent','Neutral & dezent — ruhiger Pad-Teppich'],
+  ['humorvoll_verspielt','Humorvoll & verspielt — Comedy, augenzwinkernd'],
+  ['dramatisch_spannung','Dramatisch & spannungsvoll — cineastisch, große Bilder'],
+  ['akustik_warm','Akustik & echt — Gitarre, ehrlich & nahbar'],
+  ['elegant_orchestral','Elegant & orchestral — hochwertig, premium']
 ];
 const ENDINGS = [
   ['claim_ruhig','Marken-Claim (ruhig)','Pastell-Eisblau-Endcard, großes rotes ERGO + Claim „Einfach, weil\'s wichtig ist." Ruhiger, vertrauensvoller Abschluss.'],
   ['performance_cta','Performance / CTA','Angebots-Karte mit Produktname + Nutzen, roter CTA-Button „Jetzt absichern!", dann Endcard. Auf Conversion ausgelegt.'],
   ['emotional_testimonial','Emotionales Testimonial','Warmes Schlussbild der Hauptfigur, ruhiger Markensatz + Claim. Stärkt Sympathie & Markenbindung.'],
-  ['produkt_fokus','Produkt-Fokus / Nutzen','Produktname groß, 1–2 Nutzen-Stichpunkte, CTA-URL, dann Claim. Klare Produktbotschaft.']
+  ['produkt_fokus','Produkt-Fokus / Nutzen','Produktname groß, 1–2 Nutzen-Stichpunkte, CTA-URL, dann Claim. Klare Produktbotschaft.'],
+  ['humor_pointe','Humor-Pointe + Logo','Witzige Schlusspointe der Figur, dann schnelles ERGO-Logo + Claim. Bleibt im Kopf, sympathisch.'],
+  ['rabatt_aktion_cta','Aktion / Rabatt (CTA)','Befristetes Angebot prominent (z. B. „Jetzt Vorteil sichern"), roter CTA-Button, dann Endcard. Stark conversion-orientiert.'],
+  ['terminbuchung_cta','Beratungstermin (CTA)','„Jetzt kostenlos beraten lassen" mit Button/URL, dann Claim. Für erklärungsbedürftige Produkte.'],
+  ['vertrauen_zahlen','Vertrauen & Zahlen','Kurze Vertrauensanker (z. B. Auszeichnungen, „Millionen Kunden"), ruhiger Markenabschluss + Claim.']
 ];
 const SCENES_BY_LEN = { '8':1, '16':2, '24':3, '32':4, '40':5, '48':6, '56':7, '64':8 };
 const BRAND = {
@@ -772,4 +823,15 @@ function renderProgress(){
     el.className='pill text-left border rounded-lg px-2 py-2 text-xs flex items-center gap-2 '+(done?'border-ergo-red text-gray-800':'border-gray-200 text-gray-500');
     if(done) el.style.background='#fdecee';
     el.innerHTML=`<span class="w-5 h-5 rounded-full grid place-items-center text-[10px] font-bold ${done?'bg-ergo-red text-white':'bg-gray-200 text-gray-500'}">${done?'✓':i+1}</span><span class="font-semibold leading-tight">${s}</span>`;
-    el.onclick=()=>{ if(i===STAGES.length-1 && !progress[i] && !$('freigabe').check
+    el.onclick=()=>{ if(i===STAGES.length-1 && !progress[i] && !$('freigabe').checked){ alert('Bitte zuerst die rechtliche/Marken-Freigabe bestätigen (Häkchen links).'); return; } progress[i]=!progress[i]; saveProgress(); };
+    box.appendChild(el);
+  });
+  const pct=Math.round(progress.filter(Boolean).length/STAGES.length*100);
+  $('progBar').style.width=pct+'%'; $('progPct').textContent=pct+' %';
+}
+function saveProgress(){ localStorage.setItem('progress',JSON.stringify(progress)); renderProgress(); }
+$('progReset').onclick=()=>{ progress=STAGES.map(()=>false); saveProgress(); };
+renderProgress();
+</script>
+</body>
+</html>
