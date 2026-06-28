@@ -292,7 +292,7 @@
       </div>
       <p class="text-xs text-gray-500 mb-3">Erzeugt aus dem Briefing automatisch einen fertigen Spot (Imagen → Veo 3 → Voiceover → Montage) und speichert ihn in der Cloud.</p>
       <label class="block text-xs font-semibold text-gray-700 mb-1">🔑 Zugangscode</label>
-      <input id="accessCode" type="text" placeholder="Code vom Team eingeben" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3">
+      <input id="accessCode" type="password" autocomplete="off" placeholder="Code vom Team eingeben" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3">
       <details class="mb-3">
         <summary class="text-xs text-gray-600 cursor-pointer font-semibold">⚙️ Backend-Verbindung (bereits vorkonfiguriert)</summary>
         <input id="cloudUrl" type="text" value="https://ki-video-autopilot-spj7tfr3cq-ey.a.run.app" placeholder="https://ki-video-autopilot-….a.run.app" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs mt-2">
@@ -376,8 +376,8 @@
       <canvas id="thumbCanvas" width="1280" height="720" class="hidden w-full rounded-lg border border-gray-200"></canvas>
     </div>
 
-    <!-- YouTube Upload -->
-    <div class="card p-5">
+    <!-- YouTube Upload (ausgeblendet — stattdessen Download + manueller Upload bei YouTube Studio) -->
+    <div class="card p-5" style="display:none">
       <h2 class="font-bold text-gray-800 mb-2 flex items-center gap-2">▶️ Auf YouTube hochladen</h2>
       <details class="mb-2">
         <summary class="text-xs text-gray-600 cursor-pointer font-semibold">⚙️ Einrichtung (OAuth-Client-ID) — einmalig</summary>
@@ -737,11 +737,13 @@ $('btnUsp').onclick=async()=>{
 };
 
 // ---------- YouTube-Upload ----------
-if(localStorage.getItem('ytClientId')) $('ytClientId').value=localStorage.getItem('ytClientId');
+const YT_CLIENT_ID=''; // <-- feste OAuth-Client-ID hier eintragen; dann verschwindet das Feld, Nutzer wählen nur ihr Konto
+if(YT_CLIENT_ID){ const d=$('ytClientId').closest('details'); if(d) d.style.display='none'; }
+else if(localStorage.getItem('ytClientId')) $('ytClientId').value=localStorage.getItem('ytClientId');
 $('ytClientId').onchange=()=>localStorage.setItem('ytClientId',$('ytClientId').value.trim());
 function getYtToken(){
   return new Promise((resolve,reject)=>{
-    const cid=$('ytClientId').value.trim();
+    const cid=YT_CLIENT_ID||$('ytClientId').value.trim();
     if(!cid){ reject(new Error('Bitte OAuth-Client-ID eintragen (Einrichtung).')); return; }
     if(!(window.google&&google.accounts&&google.accounts.oauth2)){ reject(new Error('Google-Login lädt noch – kurz warten und erneut versuchen.')); return; }
     const tc=google.accounts.oauth2.initTokenClient({client_id:cid, scope:'https://www.googleapis.com/auth/youtube.upload',
