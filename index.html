@@ -134,7 +134,16 @@
         </optgroup>
         <option value="__custom">Anderes Produkt (frei eingeben) …</option>
       </select>
-      <input id="productCustom" type="text" placeholder="Produktname frei eingeben" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 hidden">
+      <input id="productCustom" type="text" placeholder="Produktname frei eingeben" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2 hidden">
+      <div class="mb-3">
+        <button id="btnUsp" class="text-xs bg-white border border-ergo-petrol text-ergo-petrol font-semibold px-3 py-1.5 rounded-lg hover:bg-teal-50">🔎 Echte ERGO-USPs laden</button>
+        <span id="uspSpin" class="hidden inline-block w-3.5 h-3.5 border-2 border-ergo-petrol border-t-transparent rounded-full spin align-middle ml-1"></span>
+        <div id="uspBox" class="hidden text-xs bg-cyan-50 border border-cyan-100 rounded-lg p-2 mt-2">
+          <div class="font-semibold text-ergo-petrol mb-1">ERGO-USPs · ungeprüft – vor Veröffentlichung prüfen</div>
+          <div id="uspText" class="text-gray-700 whitespace-pre-line"></div>
+          <label class="flex items-center gap-1.5 mt-2 text-gray-600"><input type="checkbox" id="uspUse" checked> in die Story einbauen</label>
+        </div>
+      </div>
 
       <div class="grid grid-cols-2 gap-3">
         <div>
@@ -337,6 +346,7 @@
       <h2 class="font-bold text-gray-800 mb-2 flex items-center gap-2">🔁 Feedback & Versionen <span id="verBadge" class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">v1</span></h2>
       <p class="text-xs text-gray-500 mb-2">Was soll besser werden? Gemini überarbeitet Story & Brief und legt eine neue Version an.</p>
       <textarea id="feedback" rows="3" placeholder="z. B. emotionaler machen, Hauptfigur jünger, klareres Nutzenversprechen, kürzeres Ending …" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+      <button id="btnRefineFb" class="text-xs text-ergo-petrol underline mt-1">✨ Feedback von Gemini präzisieren lassen</button>
       <div class="flex items-center gap-2 mt-2">
         <button id="btnReviseGo" class="btn-primary text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2">
           <span id="reviseGoSpin" class="hidden inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full spin"></span>
@@ -543,7 +553,8 @@ function buildBrief(){
   const meta={ produkt:product, laenge_sek:Number(len), format:$('format').value, szenen_anzahl:scenes,
     veo_clips:clips, flow_credits:credits, sprachfassungen:langs, tonalitaet:$('tone').value,
     zielgruppe:$('audience').value||'allgemein', stimme:voice[0], stimme_beschr:voice[1],
-    musik:music[0], musik_beschr:music[1], ending:ending[1], ending_beschr:ending[2] };
+    musik:music[0], musik_beschr:music[1], ending:ending[1], ending_beschr:ending[2],
+    usps:(($('uspUse')&&$('uspUse').checked)?(window.currentUsps||''):'') };
   const md=`# KI-Video Produktionsvorlage
 
 ## Eckdaten
@@ -662,6 +673,20 @@ async function doRevise(){
   if(!$('story').value.trim()){ $('reviseMsg').textContent='Bitte erst „Briefing erzeugen".'; return false; }
   $('reviseSpin').classList.remove('hidden'); $('reviseMsg').textContent='Gemini überarbeitet …';
   try{
+    // Wenn bereits ein Spot existiert: NUR die Szenen minimal nach Feedback ändern (Rest + Seed bleibt) ->
+    // unveränderte Szenen werden mit identischem Prompt + Seed praktisch gleich neu erzeugt.
+    if(currentScenes && currentScenes.length){
+      const sp=`Hier ist die Szenenliste eines ERGO-Werbespots als JSON. Wende dieses Feedback um: "${fb}". Ändere AUSSCHLIESSLICH, was das Feedback verlangt — lass ALLE anderen Szenen und alle übrigen Felder Wort für Wort unverändert. Gleiche Anzahl Szenen, gleiche JSON-Struktur (image_prompt, motion_prompt, vo_de). Antworte NUR mit JSON: {"scenes":[...]}\n\nJSON:\n${JSON.stringify({scenes:currentScenes})}`;
+      const raw=await gemini(sp);
+      let txt=raw.trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+      const a=txt.indexOf('{'), b=txt.lastIndexOf('}');
+      const parsed=JSON.parse(txt.slice(a,b+1));
+      if(parsed && Array.isArray(parsed.scenes) && parsed.scenes.length){ currentScenes=parsed.scenes; saveSpotState(); }
+      else throw new Error('Konnte Szenen nicht anpassen.');
+      pushVersion($('story').value.trim(), JSON.stringify(currentScenes,null,1), fb);
+      $('feedback').value=''; $('reviseMsg').textContent='✓ v'+curVer+' — nur Feedback geändert, Rest bleibt gleich';
+      return true;
+    }
     if(versions.length===0){ const {md}=buildBrief(); pushVersion($('story').value.trim(), md, ''); }
     const prompt=`Überarbeite das folgende Storyboard für einen ${$('length').value}-Sekunden-ERGO-Werbespot (Produkt: ${getProduct()}, Tonalität: ${$('tone').value}) anhand dieses Feedbacks: "${fb}". Behalte die Grundidee, setze das Feedback klar um. Gib NUR die überarbeitete deutsche Story als Fließtext aus.\n\nStory:\n${$('story').value.trim()}`;
     const newStory=await gemini(prompt);
@@ -681,6 +706,34 @@ $('btnReviseGo').onclick=async()=>{
     const ok=await doRevise();
     if(ok){ $('reviseMsg').textContent='✓ v'+curVer+' erstellt — Spot wird jetzt erzeugt …'; await startCloud(); }
   } finally { go.disabled=false; $('reviseGoSpin').classList.add('hidden'); }
+};
+$('btnRefineFb').onclick=async()=>{
+  const fb=$('feedback').value.trim();
+  if(!fb){ $('reviseMsg').textContent='Bitte erst Feedback eintippen.'; return; }
+  $('reviseMsg').textContent='Gemini präzisiert das Feedback …';
+  try{
+    const p=`Formuliere dieses grobe Feedback zu einem ERGO-Werbespot in eine PRÄZISE, konkrete Änderungsanweisung um: was genau, in welchem Teil/welcher Szene, und wie umzusetzen. Kurz, Deutsch, als klare Anweisung – KEINE Rückfragen, NUR die Anweisung.\n\nFeedback: "${fb}"`;
+    const out=await gemini(p);
+    $('feedback').value=out.trim();
+    $('reviseMsg').textContent='✓ Feedback präzisiert — prüfen und anwenden';
+  }catch(e){ $('reviseMsg').textContent=e.message; }
+};
+window.currentUsps='';
+$('btnUsp').onclick=async()=>{
+  $('uspSpin').classList.remove('hidden');
+  try{
+    const base=(($('cloudUrl')&&$('cloudUrl').value)||'').trim().replace(/\/+$/,'');
+    if(!base) throw new Error('Keine Backend-Verbindung hinterlegt.');
+    let code=acGet(); if(!code) code=acPrompt('🔑 Zugangscode eingeben (einmalig pro Gerät):');
+    const payload=()=>JSON.stringify({produkt:getProduct(), access_code:acGet()});
+    let r=await fetch(base+'/usp',{method:'POST',headers:{'Content-Type':'application/json'},body:payload()});
+    if(r.status===403){ acPrompt('Zugangscode falsch oder fehlt. Bitte erneut eingeben:'); r=await fetch(base+'/usp',{method:'POST',headers:{'Content-Type':'application/json'},body:payload()}); }
+    const j=await r.json(); if(j.error) throw new Error(j.error);
+    window.currentUsps=j.usps||'';
+    $('uspText').textContent=window.currentUsps||'(keine USPs gefunden)';
+    $('uspBox').classList.remove('hidden');
+  }catch(e){ alert('USPs konnten nicht geladen werden: '+e.message); }
+  finally{ $('uspSpin').classList.add('hidden'); }
 };
 
 // ---------- YouTube-Upload ----------
@@ -805,6 +858,9 @@ $('cloudUrl').value=localStorage.getItem('cloudUrl')||'https://ki-video-autopilo
 $('cloudUrl').onchange=()=>localStorage.setItem('cloudUrl',$('cloudUrl').value.trim());
 if($('accessCode')){ $('accessCode').value=localStorage.getItem('accessCode')||''; $('accessCode').onchange=()=>localStorage.setItem('accessCode',$('accessCode').value.trim()); }
 let cloudVideoUrl='';
+let currentSeed = localStorage.getItem('spotSeed') || '';
+let currentScenes = (()=>{ try{ return JSON.parse(localStorage.getItem('spotScenes')||'null'); }catch(e){ return null; } })();
+function saveSpotState(){ localStorage.setItem('spotSeed', currentSeed||''); localStorage.setItem('spotScenes', JSON.stringify(currentScenes||null)); }
 function loadSpots(){ return JSON.parse(localStorage.getItem('spots')||'[]'); }
 function saveSpot(url){ const s=loadSpots(); s.unshift({url, produkt:getProduct(), len:$('length').value, ts:Date.now()}); localStorage.setItem('spots',JSON.stringify(s.slice(0,20))); renderSpots(); }
 function renderSpots(){ const box=$('spotList'); if(!box) return; const s=loadSpots(); box.innerHTML = s.length?'<div class="text-xs font-semibold text-gray-600 mt-2 mb-1">Gespeicherte Spots</div>':'';
@@ -819,7 +875,9 @@ async function startCloud(){
   if(!base){ $('cloudMsg').textContent='Bitte zuerst die Backend-URL eintragen (⚙️).'; return; }
   if(!$('story').value.trim()){ $('cloudMsg').textContent='Bitte erst eine Story eingeben.'; return; }
   let acode=acGet(); if(!acode) acode=acPrompt('🔑 Zugangscode eingeben (einmalig pro Gerät):');
-  const {meta}=buildBrief(); const brief={...meta, story:$('story').value.trim(), access_code:acode};
+  if(!currentSeed){ currentSeed=String(Math.floor(Math.random()*1e9)); saveSpotState(); }
+  const {meta}=buildBrief(); const brief={...meta, story:$('story').value.trim(), access_code:acode, seed:currentSeed};
+  if(currentScenes && currentScenes.length) brief.scenes=currentScenes;
   $('cloudSpin').classList.remove('hidden'); $('btnCloud').disabled=true;
   $('cloudResult').classList.add('hidden'); $('cloudBar').style.width='3%'; $('cloudMsg').textContent='Auftrag wird gestartet …';
   progress=STAGES.map(()=>false); progress[0]=true; saveProgress();
@@ -833,13 +891,13 @@ async function startCloud(){
       const st=await (await fetch(base+'/status/'+j.job_id)).json();
       $('cloudBar').style.width=(st.pct||0)+'%'; $('cloudMsg').textContent=st.msg||st.state;
       syncCloudProgress(st.pct||0);
-      if(st.state==='done'){ cloudVideoUrl=st.video_url; showCloudResult(st.video_url); saveSpot(st.video_url); break; }
+      if(st.state==='done'){ cloudVideoUrl=st.video_url; if(st.scenes){ currentScenes=st.scenes; saveSpotState(); } showCloudResult(st.video_url); saveSpot(st.video_url); break; }
       if(st.state==='error') throw new Error(st.error||'Fehler in der Produktion');
     }
   }catch(e){ $('cloudMsg').textContent='⚠ '+e.message; }
   finally{ $('cloudSpin').classList.add('hidden'); $('btnCloud').disabled=false; }
 }
-$('btnCloud').onclick=startCloud;
+$('btnCloud').onclick=()=>{ currentSeed=String(Math.floor(Math.random()*1e9)); currentScenes=null; saveSpotState(); return startCloud(); };
 function showCloudResult(url){
   $('cloudResult').classList.remove('hidden'); $('cloudVideo').src=url; $('cloudDownload').href=url;
   $('cloudMsg').textContent='✓ Spot fertig — anschauen und entscheiden.';
